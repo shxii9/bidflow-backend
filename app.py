@@ -1,4 +1,10 @@
+# <-- التغيير هنا: استيراد المكتبات اللازمة لإدارة متغيرات البيئة
 import os
+from dotenv import load_dotenv
+
+# <-- التغيير هنا: تحميل المتغيرات من ملف .env في بداية تشغيل التطبيق
+load_dotenv()
+
 import jwt
 from flask import Flask, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
@@ -17,9 +23,13 @@ from flask_admin.contrib.sqla import ModelView
 # -----------------------------------------------------------------------------
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'app.db')
+
+# <-- التغيير هنا: قراءة إعدادات قاعدة البيانات والمفتاح السري من متغيرات البيئة
+# يتم توفير قيمة افتراضية في حال لم يتم العثور على المتغير، وهذا مناسب لبيئة التطوير
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'app.db'))
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'a-default-secret-key-for-development-only')
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'a-very-secret-and-long-key-that-no-one-knows'
 app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -145,6 +155,7 @@ def role_required(role_name):
 # -----------------------------------------------------------------------------
 # 6. مسارات التطبيق (Routes / Endpoints)
 # -----------------------------------------------------------------------------
+# ... (جميع مساراتك تبقى كما هي، لا حاجة لتغييرها) ...
 @app.route('/')
 def index():
     return "مرحباً بك في الخادم الخلفي لنظام المزادات!"
@@ -368,5 +379,8 @@ if __name__ == '__main__':
     scheduler.start()
     
     print("--- Starting Flask App with Admin Panel and Scheduler ---")
-    app.run(debug=True, use_reloader=False)
-
+    
+    # <-- التغيير هنا: قراءة وضع التصحيح من متغيرات البيئة
+    # هذا يضمن عدم تشغيل وضع التصحيح عن طريق الخطأ في بيئة الإنتاج
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']
+    app.run(debug=debug_mode, use_reloader=False)
